@@ -7,6 +7,10 @@ on:
 jobs:
   cancel-older-runs:
     runs-on: ubuntu-latest
+    permissions:
+      # "actions: write" is critical to allow the token to cancel other runs
+      actions: write
+
     steps:
       - name: Cancel older runs from the same PR
         uses: actions/github-script@v6
