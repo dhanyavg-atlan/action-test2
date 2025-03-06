@@ -10,5 +10,5 @@ jobs:
   sleep_job:
     runs-on: ubuntu-latest
     steps:
-      - name: Sleep for 2 minutes
-        run: sleep 120
+      - name: Sleep for 3 minutes
+        run: sleep 180
