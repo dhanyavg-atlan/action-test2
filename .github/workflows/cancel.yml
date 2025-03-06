@@ -3,7 +3,9 @@ name: Cancel
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-
+  push:
+    branches:
+      - test1
 jobs:
   cancel-older-runs:
     runs-on: ubuntu-latest
