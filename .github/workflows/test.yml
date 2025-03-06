@@ -5,14 +5,87 @@ on:
     branches:
       - main
       - test1
-
-concurrency:
-  group: shared-integration-tests
-  cancel-in-progress: false
+      # or whichever branches you want
 
 jobs:
-  sleep_job:
+  queued-sleep:
     runs-on: ubuntu-latest
     steps:
-      - name: Sleep for 4 minutes
+      - name: Wait for my turn in queue
+        uses: actions/github-script@v6
+        with:
+          script: |
+            /*
+              We'll block until *no older runs* of this same workflow are
+              still in 'queued' or 'in_progress' status. That effectively
+              enforces a FIFO sequence for all runs of "Sleep-for-4-Minutes."
+            */
+            const { owner, repo } = context.repo;
+            const currentRunId = context.runId;
+
+            // 1) Get info about *this* run, including its creation time.
+            const currentRunResponse = await github.rest.actions.getWorkflowRun({
+              owner,
+              repo,
+              run_id: currentRunId
+            });
+            const creationTime = new Date(currentRunResponse.data.created_at).getTime();
+
+            // 2) Repeatedly poll for older runs that haven't finished yet.
+            while(true) {
+              let blockingFound = false;
+
+              // Check 'queued' runs for this same workflow
+              let response = await github.rest.actions.listWorkflowRunsForRepo({
+                owner,
+                repo,
+                workflow_id: "Sleep-for-4-Minutes", // or use the numeric ID instead of name
+                status: "queued",
+                per_page: 100
+              });
+              for(const run of response.data.workflow_runs) {
+                if(run.id !== currentRunId) {
+                  const otherCreated = new Date(run.created_at).getTime();
+                  // If that run was created before us, we must wait.
+                  if(otherCreated < creationTime) {
+                    blockingFound = true;
+                    break;
+                  }
+                }
+              }
+
+              // Also check 'in_progress'
+              if(!blockingFound) {
+                response = await github.rest.actions.listWorkflowRunsForRepo({
+                  owner,
+                  repo,
+                  workflow_id: "Sleep-for-4-Minutes",
+                  status: "in_progress",
+                  per_page: 100
+                });
+                for(const run of response.data.workflow_runs) {
+                  if(run.id !== currentRunId) {
+                    const otherCreated = new Date(run.created_at).getTime();
+                    if(otherCreated < creationTime) {
+                      blockingFound = true;
+                      break;
+                    }
+                  }
+                }
+              }
+
+              // If we didn't find any older queued or in-progress runs, proceed.
+              if(!blockingFound) {
+                console.log("No older runs are blocking me. Proceeding!");
+                break;
+              }
+
+              // Otherwise wait 30 seconds and check again.
+              console.log("An older run is still queued or in progress. Waiting 15s...");
+              await new Promise(res => setTimeout(res, 15_000));
+            }
+
+            console.log("It's my turn now!");
+
+      - name: Actually Sleep
         run: sleep 240
