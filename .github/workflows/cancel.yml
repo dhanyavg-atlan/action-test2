@@ -14,4 +14,4 @@ jobs:
           # Allows the action to use the GitHub API to cancel runs
           access_token: ${{ secrets.GITHUB_TOKEN }}
 
-          workflow_id: "Sleep for 3 Minutes"
+          workflow_id: "Sleep-for-4-Minutes"
