@@ -4,7 +4,7 @@ on:
   pull_request:
     branches:
       - main
-      - temp1
+      - test1
 
 jobs:
   sleep_job:
