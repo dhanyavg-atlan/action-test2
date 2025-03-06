@@ -3,63 +3,61 @@ name: Cancel
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+
 jobs:
   cancel-older-runs:
     runs-on: ubuntu-latest
-    permissions:
-      # "actions: write" is critical to allow the token to cancel other runs
-      actions: write
-
     steps:
-      - name: Cancel older runs from the same PR
+      - name: Cancel older runs from the same PR (older commits only)
         uses: actions/github-script@v6
         with:
           script: |
             const { owner, repo } = context.repo;
-            const prNumber = context.payload.pull_request.number;
-            const currentRunId = context.runId;
+            const currentPrNumber = context.payload.pull_request.number;
+            // The new commit SHA for this PR
+            const newCommitSha = context.payload.pull_request.head.sha;
 
-            // The exact 'name' from your target workflow's "name:" field at the top of its YAML
-            // For example: name: Integration Tests for Metastore
+            // The top-level "name:" of your main workflow file
             const targetWorkflowName = "Sleep-for-4-Minutes";
 
-            // We want to look for runs that are either queued or in_progress, not completed
             const statusesToCheck = ["queued", "in_progress"];
-
             for (const status of statusesToCheck) {
               const runsResponse = await github.rest.actions.listWorkflowRunsForRepo({
                 owner,
                 repo,
                 event: "pull_request",
                 status,
-                per_page: 100  // You can paginate if you have >100 runs simultaneously
+                per_page: 100
               });
-
               const allRuns = runsResponse.data.workflow_runs;
-              for (const run of allRuns) {
-                // Skip if it's our *current* run (we never want to cancel ourselves)
-                if (run.id === currentRunId) {
-                  continue;
-                }
 
-                // Skip if this run is for a different workflow
-                // (Different .name means it's not the "Integration Tests for Metastore" workflow)
+              for (const run of allRuns) {
+                // Skip if it's a different workflow
                 if (run.name !== targetWorkflowName) {
                   continue;
                 }
 
-                // pull_requests is an array of PR objects that triggered the run
-                // We cancel only if run.pull_requests includes *our* current PR number
-                const prNumbers = run.pull_requests.map((pr) => pr.number);
-                if (prNumbers.includes(prNumber)) {
-                  // Found an older run of this *same* PR => cancel it
-                  await github.rest.actions.cancelWorkflowRun({
-                    owner,
-                    repo,
-                    run_id: run.id,
-                  });
-                  console.log(`Canceled run ${run.id} for PR #${prNumber}`);
+                // Does this run belong to the same PR?
+                // The run.pull_requests array might have multiple PR references, but we only care
+                // if any match our current PR number.
+                const prNumbers = run.pull_requests.map(pr => pr.number);
+                if (!prNumbers.includes(currentPrNumber)) {
+                  continue;
                 }
+
+                // If the run's head_sha == newCommitSha, that means it's for THIS new commit.
+                // We want to keep it, not cancel.
+                if (run.head_sha === newCommitSha) {
+                  continue;
+                }
+
+                // Otherwise, it's an older commit for the same PR => cancel it.
+                await github.rest.actions.cancelWorkflowRun({
+                  owner,
+                  repo,
+                  run_id: run.id,
+                });
+                console.log(`Canceled older run ${run.id} for PR #${currentPrNumber} (SHA=${run.head_sha})`);
               }
             }
 
