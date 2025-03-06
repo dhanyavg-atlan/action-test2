@@ -1,0 +1,17 @@
+name: Cancel Previous Runs (Same PR)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  cancel-older-runs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cancel previous runs from the same PR
+        uses: styfle/cancel-workflow-action@0.10.0
+        with:
+          # Allows the action to use the GitHub API to cancel runs
+          access_token: ${{ secrets.GITHUB_TOKEN }}
+
+          workflow_id: "Sleep for 3 Minutes"
