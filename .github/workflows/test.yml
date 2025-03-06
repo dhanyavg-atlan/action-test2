@@ -1,0 +1,14 @@
+name: Sleep for 2 Minutes
+
+on:
+  pull_request:
+    branches:
+      - main
+      - temp1
+
+jobs:
+  sleep_job:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sleep for 2 minutes
+        run: sleep 120
