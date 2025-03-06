@@ -6,6 +6,10 @@ on:
       - main
       - test1
 
+concurrency:
+  group: shared-integration-tests
+  cancel-in-progress: false
+
 jobs:
   sleep_job:
     runs-on: ubuntu-latest
