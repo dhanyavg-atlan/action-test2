@@ -1,4 +1,4 @@
-name: Sleep-for-3-Minutes
+name: Sleep-for-4-Minutes
 
 on:
   pull_request:
@@ -14,5 +14,5 @@ jobs:
   sleep_job:
     runs-on: ubuntu-latest
     steps:
-      - name: Sleep for 3 minutes
-        run: sleep 180
+      - name: Sleep for 4 minutes
+        run: sleep 240
