@@ -47,9 +47,10 @@ jobs:
                 console.log("The workflow runs that are in queue currently");
                 for(const run of response.data.workflow_runs) {
                   if(run.id !== currentRunId) {
-                    console.log(run.id)
+                    
                     const otherCreated = new Date(run.created_at).getTime();
                     if(otherCreated < creationTime) {
+                      console.log(run.id)
                       blockingFound = true;
                       break;
                     }
