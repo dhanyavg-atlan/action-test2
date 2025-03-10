@@ -22,7 +22,7 @@ jobs:
             const newCommitSha = context.payload.pull_request.head.sha;
 
             // The exact "name:" from the second workflow below.
-            const targetWorkflowName = "Sleep-for-4-Minutes";
+            const targetWorkflowName = "Integration-Tests-for-Metastore";
 
             // We'll look for runs in these statuses
             const statusesToCheck = ["queued", "in_progress"];
