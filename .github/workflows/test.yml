@@ -4,7 +4,7 @@ on:
   pull_request:
     branches:
       - main
-      - test1
+      - test
       # or whichever branches you want
 
 jobs:
