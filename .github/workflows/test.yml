@@ -35,25 +35,6 @@ jobs:
             while(true) {
               let blockingFound = false;
 
-              // Check 'queued' runs for this same workflow
-              let response = await github.rest.actions.listWorkflowRunsForRepo({
-                owner,
-                repo,
-                workflow_id: "Integration-Tests-for-Metastore", // or use the numeric ID instead of name
-                status: "queued",
-                per_page: 100
-              });
-              for(const run of response.data.workflow_runs) {
-                if(run.id !== currentRunId) {
-                  const otherCreated = new Date(run.created_at).getTime();
-                  // If that run was created before us, we must wait.
-                  if(otherCreated < creationTime) {
-                    blockingFound = true;
-                    break;
-                  }
-                }
-              }
-
               // Also check 'in_progress'
               if(!blockingFound) {
                 response = await github.rest.actions.listWorkflowRunsForRepo({
@@ -63,8 +44,10 @@ jobs:
                   status: "in_progress",
                   per_page: 100
                 });
+                console.log("The workflow runs that are in queue currently");
                 for(const run of response.data.workflow_runs) {
                   if(run.id !== currentRunId) {
+                    console.log(run.id)
                     const otherCreated = new Date(run.created_at).getTime();
                     if(otherCreated < creationTime) {
                       blockingFound = true;
