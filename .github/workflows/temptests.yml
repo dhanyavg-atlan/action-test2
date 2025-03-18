@@ -1,0 +1,46 @@
+name: Integration-Tests
+
+on:
+  push:
+    branches:
+      - temptests.yml
+jobs:
+  list-integration-tests:
+    runs-on: ubuntu-latest
+    outputs:
+      tests: ${{ steps.test-files.outputs.tests }}
+      test_count: ${{ steps.test-files.outputs.test_count }}  # <-- new output
+    steps:
+      - name: Checkout Java SDK Repo
+        uses: actions/checkout@v4
+        with:
+          repository: atlanhq/atlan-java
+          ref: main
+
+      - name: List integration tests
+        id: test-files
+        run: |
+          SKIP_PATTERN="SearchTest.java|RequestsTest.java|SSOTest.java|PersonaTest.java|AdminTest.java|DataMeshTest.java|InsightsTest.java|PurposeTest.java"
+
+          # List all *Test.java files, exclude the ones that match SKIP_PATTERN
+          tests=$(ls integration-tests/src/test/java/com/atlan/java/sdk/*Test.java \
+            | grep -vE "${SKIP_PATTERN}" \
+            | sed -E 's|.*/src/test/java/com/atlan/java/sdk/||; s|/|.|g; s|\.java$||' \
+            | tr '\n' ' ')
+
+          # Print the final list of tests for visibility
+          echo "Proceeding with the following tests:"
+          echo "$tests"
+
+          # Convert the space-separated test list into JSON array
+          json_tests=$(echo "$tests[@]}" | jq -R -c 'split(" ")[:-1]')
+
+          # Output for use in later jobs
+          echo "tests=$json_tests" >> $GITHUB_OUTPUT
+
+          # Count how many test classes we found
+          test_count=$(echo "$tests" | wc -w)
+          echo "test_count=$test_count" >> $GITHUB_OUTPUT
+
+          # Print for debugging
+          echo "Tests: $test_count"
