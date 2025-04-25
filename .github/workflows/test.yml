@@ -7,8 +7,22 @@ on:
       - temp1
 
 jobs:
-  sleep_job:
+  setup-java-sdk:
     runs-on: ubuntu-latest
     steps:
-      - name: Sleep for 3 minutes
-        run: sleep 180
+      - name: Checkout Java SDK Repo
+        uses: actions/checkout@v4
+        with:
+          repository: atlanhq/atlan-java
+          ref: main
+
+      - name: Set up JDK for SDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: 21
+          distribution: temurin
+
+      - name: Compile
+        uses: burrunan/gradle-cache-action@v1
+        with:
+          arguments: assemble shadowJar test
